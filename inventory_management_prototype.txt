@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Management System</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [items, setItems] = useState([]);
+      const [name, setName] = useState('');
+      const [quantity, setQuantity] = useState('');
+      const [price, setPrice] = useState('');
+
+      useEffect(() => {
+        fetchItems();
+      }, []);
+
+      const fetchItems = async () => {
+        try {
+          const response = await axios.get('http://localhost:5000/api/inventory');
+          setItems(response.data);
+        } catch (error) {
+          console.error('Error fetching items:', error);
+        }
+      };
+
+      const addItem = async () => {
+        if (!name || !quantity || !price) return;
+        try {
+          await axios.post('http://localhost:5000/api/inventory', {
+            name,
+            quantity: parseInt(quantity),
+            price: parseFloat(price)
+          });
+          setName('');
+          setQuantity('');
+          setPrice('');
+          fetchItems();
+        } catch (error) {
+          console.error('Error adding item:', error);
+        }
+      };
+
+      const deleteItem = async (id) => {
+        try {
+          await axios.delete(`http://localhost:5000/api/inventory/${id}`);
+          fetchItems();
+        } catch (error) {
+          console.error('Error deleting item:', error);
+        }
+      };
+
+      const totalValue = items.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2);
+
+      return (
+        <div className="container mx-auto p-4">
+          <h1 className="text-3xl font-bold mb-4">Inventory Management System</h1>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Item Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border p-2 mr-2"
+            />
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="border p-2 mr-2"
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="border p-2 mr-2"
+            />
+            <button
+              onClick={addItem}
+              className="bg-blue-500 text-white p-2 rounded"
+            >
+              Add Item
+            </button>
+          </div>
+          <h2 className="text-xl font-semibold">Inventory List</h2>
+          <table className="w-full border-collapse border">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border p-2">Name</th>
+                <th className="border p-2">Quantity</th>
+                <th className="border p-2">Price</th>
+                <th className="border p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id}>
+                  <td className="border p-2">{item.name}</td>
+                  <td className="border p-2">{item.quantity}</td>
+                  <td className="border p-2">${item.price.toFixed(2)}</td>
+                  <td className="border p-2">
+                    <button
+                      onClick={() => deleteItem(item.id)}
+                      className="bg-red-500 text-white p-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-4 text-lg">Total Inventory Value: ${totalValue}</p>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
